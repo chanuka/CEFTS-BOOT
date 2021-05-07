@@ -54,7 +54,7 @@ public class CeftsBootApplication {
 
     public void test(){
         String test;
-        System.out.println("sdgsdf");
+        System.out.println("test git command");
         test2();
     }
 
