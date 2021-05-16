@@ -7,8 +7,9 @@ public class JavaTestMain {
 
     public static void main(String[] args) {
 
-        // non static method can call only within non static methods
-        //            test();
+        // non static method can call only by creating class object
+//        JavaTestMain javaTestMain = new JavaTestMain();
+//        javaTestMain.test();
 
 //        static method can call within static or no static methods
 //        and all static variables are class level cannot be defined in the method level

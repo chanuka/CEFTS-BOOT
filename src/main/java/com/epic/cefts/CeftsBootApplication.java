@@ -1,9 +1,7 @@
 package com.epic.cefts;
 
-import com.epic.cefts.bean.ListenerSession;
-import com.epic.cefts.database.DBPool;
+import com.epic.cefts.handler.*;
 import com.epic.cefts.pool.RequestQueue;
-import com.sun.prism.impl.PrismSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.SpringApplication;
@@ -37,19 +35,36 @@ public class CeftsBootApplication {
             ENGINE_QUEUE = new RequestQueue("com.epic.cefts.message.MessageHandler",
                     10,
                     2,
-                    8);
+                    Runtime.getRuntime().availableProcessors());
 
             Thread.sleep(5000);
-            LOGGER.info("Main Queue creation success..");
+            LOGGER.info("Main Queue creation success.." + Runtime.getRuntime().availableProcessors());
 
-            for (int i = 0; i < 20; i++) {
-                ListenerSession s = new ListenerSession();
-                s.setSessionId(String.valueOf(i));
-//                LOGGER.info("adding :"+ i);
-                ENGINE_QUEUE.add(s);
-                Thread.sleep(500);
-            }
+//            for (int i = 0; i < 20; i++) {
+//                ListenerSession s = new ListenerSession();
+//                s.setSessionId(String.valueOf(i));
+////                LOGGER.info("adding :"+ i);
+//                ENGINE_QUEUE.add(s);
+//                Thread.sleep(500);
+//            }
 
+
+            //connect CEFTS Acquirer channel
+            new Thread(new CeftAcquirerChannelHandler()).start();
+
+            //connect CEFTS Issuer channel
+            new Thread(new CeftIssuerChannelHandler()).start();
+
+            // create all timeout session removing threads...
+            new Thread(new CeftAcquirerTimeOutHandler()).start();
+            new Thread(new CeftIssuerTimeOutHandler()).start();
+            new Thread(new CoreBankTimeOutHandler()).start();
+
+            // Create Operation handler Thread
+            new Thread(new OperationHandler()).start();
+
+            // Create Web Channel handler Thread
+            new Thread(new WebChannelHandler()).start();
 
         } catch (Exception e) {
             e.printStackTrace();
