@@ -1,7 +1,13 @@
 package com.epic.cefts.handler;
 
+import org.jpos.iso.ISOException;
+import org.jpos.iso.ISOMsg;
+import org.jpos.iso.ISOUtil;
+import org.jpos.iso.packager.GenericPackager;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -56,8 +62,28 @@ public class CeftAcquirerChannelHandler implements Runnable {
             try {
                 if (isConnect) {
                     synchronized (IN) {
-                        int msgFromReply = IN.readInt();
-                        System.out.println("Message from Server is : " + msgFromReply);
+                        byte[] HD = new byte[4];
+                        IN.readFully(HD, 0, 4);
+                        int HD_LEN = Integer.parseInt(ISOUtil.hexString(HD), 16);
+                        byte BUFF[] = new byte[HD_LEN];
+                        IN.readFully(BUFF, 0, HD_LEN);
+
+                        byte ceftHeader[] = new byte[20];
+                        byte ceftMsg[] = new byte[BUFF.length - 20];
+                        for (int i = 0; i < BUFF.length; i++) {
+
+                            if (i < 20) {
+                                ceftHeader[i] = BUFF[i];
+                            } else {
+                                ceftMsg[i - 20] = BUFF[i];
+                            }
+                        }
+                        InputStream is = getClass().getResourceAsStream("/iso87binary.xml");
+                        GenericPackager packager = new GenericPackager(is);
+                        ISOMsg isoMsg = new ISOMsg();
+                        isoMsg.setPackager(packager);
+                        isoMsg.unpack(ceftMsg);
+                        printISOMessage(isoMsg);
                     }
 
                 } else {
@@ -72,6 +98,19 @@ public class CeftAcquirerChannelHandler implements Runnable {
             } catch (Exception e) {
 
             }
+        }
+    }
+
+    public void printISOMessage(ISOMsg isoMsg) {
+        try {
+            System.out.printf("MTI = %s%n", isoMsg.getMTI());
+            for (int i = 1; i <= isoMsg.getMaxField(); i++) {
+                if (isoMsg.hasField(i)) {
+                    System.out.printf("Field (%s) = %s%n", i, isoMsg.getString(i));
+                }
+            }
+        } catch (ISOException e) {
+            e.printStackTrace();
         }
     }
 }
